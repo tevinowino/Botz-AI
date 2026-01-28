@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Botz AI</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+
+    <body>
+        <div class="container"> <!-- This is a div element -->
+            <h1 id="title">Botz</h1>
+
+            <div class="chat-window">
+                <div class="bot">Hello, I am Botz, your AI Assistant. How can I help you today?</div>
+            </div>
+            
+            <div class="input">
+                <input placeholder="Ask me anything..." type="text" id="user-input">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+
+
+    <script>
+        /*
+            JAVASCRIPT = makes pages interactive (responds to clicks, talks to servers, etc.)
+            JS comments: // single line   /* multi-line */
+
+        // === STEP 1: GET HTML ELEMENTS ===
+        // We need references to elements before we can interact with them
+
+        const chatWindow = document.querySelector('.chat-window');
+        // const = variable that can't be reassigned (use by default!)
+        // document.querySelector() = finds element using CSS selector
+        // '.chat-window' = dot means class selector
+
+        const userInput = document.querySelector('#user-input');
+        // '#user-input' = hash means ID selector
+
+        const sendButton = document.querySelector('#send-button');
+
+
+        // === STEP 2: API FUNCTION ===
+        // Sends user message to AI and gets response
+
+        async function getReply(message) {
+            // async = function can "wait" for things (like server responses)
+            // function = reusable block of code
+            // message = parameter (input value when function is called)
+
+            const apiKey = 'AIzaSyD2f5SAJYK5LzQIv4TGcU0Shoh7R_n6X7o';
+            // API key = password to use the AI service
+            // WARNING: In real apps, never expose API keys in frontend code!
+
+            const model = 'gemini-2.5-flash';
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+            // Backticks ` allow ${variable} insertion (template literal)
+
+            try {
+                // try-catch = attempt risky code, handle errors gracefully
+
+                const response = await fetch(url, {
+                    // fetch() = make HTTP request to server
+                    // await = pause until request completes
+                    method: 'POST',
+                    // POST = sending data. GET = retrieving data. Sending the user input
+
+                    headers: {
+                        'Content-Type': 'application/json', // Data format
+                        'x-goog-api-key': apiKey
+                    },
+
+                    body: JSON.stringify({
+
+                        // JSON.stringify() = convert JS object to JSON text
+
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: `You are an AI chatbot assistant. Your name is Botz. You are here to help users with their queries and provide information. You are friendly and helpful. User: ${message}`
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+                });
+
+
+                if (!response.ok) {
+                    // ! = NOT operator. response.ok = true if successful (200-299)
+                    throw new Error(`API request failed: ${response.status}`);
+                    // throw = create error, jumps to catch block
+                }
+
+
+                const data = await response.json();
+                // .json() = convert JSON text back to JS object
+
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                // ?. = optional chaining - safely access nested properties
+                // Returns undefined instead of crashing if something's missing
+                // [0] = first item in array (arrays start at index 0)
+
+                if (!reply) {
+                    throw new Error('No response text found');
+                }
+
+                return reply;
+                // return = send value back to whoever called this function
+
+            } catch (error) {
+                // catch = runs if anything in try block throws an error
+
+                console.error('Error calling Gemini API:', error);
+                // console.error() = print to browser DevTools console (F12)
+
+                return 'Sorry, I encountered an error. Please try again.';
+            }
+        }
+
+
+        // === STEP 3: CLICK EVENT ===
+        // Run code when send button is clicked
+
+        sendButton.addEventListener('click', () => {
+            // addEventListener() = do something when event happens
+            // 'click' = event type
+            // () => {} = arrow function (callback to run)
+
+            const userMessage = userInput.value;
+            // .value = what user typed in input field
+
+            if (userMessage.trim() !== '') {
+                // if = only run code if condition is true
+                // .trim() = remove whitespace from both ends
+                // !== = strict not-equal comparison
+
+                // Add user message to chat
+                const userMessageElement = document.createElement('div');
+                // createElement() = make new HTML element
+
+                userMessageElement.classList.add('user');
+                // .classList.add() = add CSS class to element
+
+                userMessageElement.textContent = userMessage;
+                // .textContent = set text inside element (safe from XSS)
+
+                chatWindow.appendChild(userMessageElement);
+                // .appendChild() = add element as child (puts it in the page)
+
+                userInput.value = '';
+                // Clear the input field
+
+                // Add "thinking" message
+                const botMessageElement = document.createElement('div');
+                botMessageElement.classList.add('bot');
+                botMessageElement.textContent = 'Bot is thinking...';
+                chatWindow.appendChild(botMessageElement);
+
+                // Get AI response
+                getReply(userMessage)
+                    .then((reply) => {
+                        // .then() = runs when promise succeeds
+                        botMessageElement.textContent = reply;
+                    })
+                    .catch((error) => {
+                        // .catch() = runs if promise fails
+                        console.error('Error getting reply:', error);
+                        botMessageElement.textContent = 'Sorry, I encountered an error. Please try again.';
+                    });
+
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                // Auto-scroll to bottom of chat
+
+            } else {
+                alert('Please enter a message');
+                // alert() = popup message box
+            }
+        });
+
+
+        // === STEP 4: ENTER KEY SHORTCUT ===
+
+        userInput.addEventListener('keypress', (e) => {
+            // 'keypress' = fires when key pressed
+            // e = event object with info about what happened
+
+            if (e.key === 'Enter') {
+                // e.key = which key was pressed
+                sendButton.click();
+                // .click() = simulate a click (reuse existing logic)
+            }
+        });
+
+    </script>
+    </body>
+</html>
